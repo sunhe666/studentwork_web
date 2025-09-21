@@ -1,7 +1,6 @@
 <template>
   <div class="project-search-container">
-    <Navbar />
-    <!-- 头部搜索栏 -->
+    <Navbar />    <!-- 头部搜索栏 -->
     <div class="search-header">
       <div class="search-box">
         <input type="text" v-model="searchQuery" placeholder="搜索项目..." class="search-input">
@@ -11,9 +10,12 @@
 
     <!-- 分类标签 -->
     <div class="category-tags">
-      <div v-for="category in categories" :key="category.id" :class="['tag-item', { 'active': activeCategory === category.name }]" @click="activeCategory = category.name">
+      <div v-for="category in displayedCategories" :key="category.id" :class="['tag-item', { 'active': activeCategory === category.name }]" @click="activeCategory = category.name">
         {{ category.name }}
       </div>
+      <button v-if="categories.length > TAG_LIMIT" class="expand-btn" @click="toggleExpand">
+        {{ isExpanded ? '收起' : '展开' }}
+      </button>
     </div>
 
     <!-- 内容列表 -->
@@ -25,7 +27,6 @@
         <div class="latest-item">
           <div class="item-cover">
             <img :src="item.cover" alt="项目封面" class="cover-img" />
-            
           </div>
           <div class="item-content">
             <div class="item-header">
@@ -47,7 +48,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, watch,computed } from 'vue';
 import Navbar from '/src/components/Navbar.vue';
 import { ElMessage } from 'element-plus';
 import { useRouter } from 'vue-router';
@@ -70,7 +71,7 @@ const fetchCategories = async () => {
       .filter(cat => cat.status === 1)
       .sort((a, b) => a.sort - b.sort);
     // 添加"全部"选项到开头
-    categories.value = [{ id: 'all', name: '全部' }, ...validCategories];
+    categories.value = [ ...validCategories];
   } catch (error) {
     console.error('获取分类列表失败:', error);
     ElMessage.error('获取分类失败，请稍后重试');
@@ -80,8 +81,20 @@ const fetchCategories = async () => {
 // 页面加载时获取分类数据
 fetchCategories();
 
-// 过滤内容列表
-
+// 页面挂载时设置默认分类
+onMounted(() => {
+  const storedMajor = localStorage.getItem('selectedMajor');
+  if (storedMajor) {
+    try {
+      const selectedMajor = JSON.parse(storedMajor);
+      if (selectedMajor && selectedMajor.name) {
+        activeCategory.value = selectedMajor.name;
+      }
+    } catch (e) {
+      console.error('解析专业数据失败:', e);
+    }
+  }
+});
 
 // 日期格式化
 const formatDate = (dateString) => {
@@ -94,25 +107,46 @@ const currentPage = ref(1);
 const total = ref(0);
 
 // 获取项目列表数据
+const TAG_LIMIT = 5;
+const isExpanded = ref(false);
+
+const displayedCategories = computed(() => {
+  if (isExpanded.value) return categories.value;
+  return categories.value.slice(0, TAG_LIMIT);
+});
+
+const toggleExpand = () => {
+  isExpanded.value = !isExpanded.value;
+};
+
 const fetchProjectList = async () => {
   try {
     // 构建查询参数
     const params = new URLSearchParams();
     if (searchQuery.value) params.append('keyword', searchQuery.value);
+    // 优先使用用户选择的分类标签
     const selectedCategory = categories.value.find(cat => cat.name === activeCategory.value);
     if (selectedCategory && selectedCategory.id !== 'all') {
       params.append('category', selectedCategory.name);
+    } else {
+      // 否则使用选择的专业
+      const selectedMajorStr = localStorage.getItem('selectedMajor');
+      if (selectedMajorStr) {
+        try {
+          const selectedMajor = JSON.parse(selectedMajorStr);
+          if (selectedMajor && selectedMajor.name) {
+            params.append('category', selectedMajor.name);
+          }
+        } catch (e) {
+          console.error('解析selectedMajor失败:', e);
+        }
+      }
     }
     params.append('page', currentPage.value);
     params.append('limit', 10);
 
     const response = await axios.get(`/content/list?${params.toString()}`);
-    console.log(response)
-    // 添加API响应数据检查
-  
-    
     contentList.value = response;
-   
   } catch (error) {
     console.error('获取内容列表失败:', error);
     ElMessage.error('获取内容失败，请稍后重试');
@@ -132,14 +166,13 @@ fetchProjectList();
 
 <style scoped>
 .project-search-container {
-  margin-top: 110px;
-
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
 }
 
 .search-header {
+  margin-top: 120px;
   margin-bottom: 30px;
   text-align: center;
 }
@@ -181,9 +214,47 @@ fetchProjectList();
 .category-tags {
   display: flex;
   flex-wrap: wrap;
-  margin-top:100px;
-  gap: 10px;
-  margin-bottom: 30px;
+  gap: 8px;
+  margin-bottom: 16px;
+  align-items: center;
+}
+
+.expand-btn {
+   padding: 6px 8px;
+   border: none;
+   border-radius: 16px;
+   background: #f0f0f0;
+   color: #666;
+   cursor: pointer;
+   font-size: 14px;
+   white-space: nowrap;
+   transition: all 0.2s;
+   margin-left: 8px;
+}
+
+.expand-btn:hover {
+   background: #e0e0e0;
+   color: #333;
+   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.expand-btn:active {
+   background: #d0d0d0;
+}
+
+.tag-item {
+   padding: 6px 12px;
+   border-radius: 16px;
+   cursor: pointer;
+   transition: all 0.2s;
+   background: #f0f0f0;
+   &.active {
+     background: #409eff;
+     color: white;
+   }
+   &:hover:not(.active) {
+     background: #e0e0e0;
+   }
   padding-bottom: 15px;
   border-bottom: 1px solid #f0f0f0;
 }
@@ -218,7 +289,7 @@ fetchProjectList();
   font-size: 16px;
 }
 
-/* 复用Home.vue中的列表样式 */
+/* 列表样式 */
 .latest-list {
   display: flex;
   flex-direction: column;
@@ -256,8 +327,6 @@ fetchProjectList();
   border-radius: 8px;
   transition: transform 0.3s ease;
 }
-
-
 
 .item-content {
   flex: 1;
@@ -364,5 +433,120 @@ fetchProjectList();
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+/* 响应式样式 */
+@media (max-width: 768px) {
+  .project-search-container {
+    padding: 15px;
+  }
+  
+  .search-header {
+    margin-top: 100px;
+    margin-bottom: 20px;
+  }
+  
+  .search-box {
+    max-width: 100%;
+  }
+  
+  .search-input {
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+  
+  .search-button {
+    padding: 0 16px;
+  }
+  
+  .category-tags {
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+  
+  .tag-item {
+    padding: 6px 12px;
+    font-size: 12px;
+    margin-right: 8px;
+  }
+  
+  .latest-item {
+    flex-direction: column;
+    padding: 15px;
+  }
+  
+  .item-cover {
+    width: 100%;
+    height: 180px;
+    margin-right: 0;
+    margin-bottom: 15px;
+  }
+  
+  .cover-img {
+    width: 100%;
+    height: 100%;
+  }
+  
+  .item-content {
+    padding: 0;
+  }
+  
+  .item-header {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .item-title {
+    font-size: 16px;
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .project-search-container {
+    padding: 10px;
+  }
+  
+  .search-header {
+    margin-top: 130px;
+  }
+  
+  .search-input {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+  
+  .search-button {
+    padding: 0 12px;
+    font-size: 13px;
+  }
+  
+  .tag-item {
+    padding: 5px 10px;
+    font-size: 11px;
+  }
+  
+  .empty-content {
+    padding: 30px 0;
+    font-size: 14px;
+  }
+  
+  .item-cover {
+    height: 150px;
+  }
+  
+  .item-title {
+    font-size: 15px;
+  }
+  
+  .item-features {
+    font-size: 13px;
+  }
+  
+  .item-meta {
+    font-size: 11px;
+    gap: 8px;
+  }
 }
 </style>

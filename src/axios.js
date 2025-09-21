@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 const instance = axios.create({
-  baseURL: '/', // 可根据需要修改
+  baseURL: 'https://sunhe.site', // 可根据需要修改
   timeout: 10000,
 })
 

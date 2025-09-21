@@ -3,7 +3,7 @@
     <div class="auth-card">
       <div class="auth-header">
         <h2 class="auth-title">用户注册</h2>
-        <p class="auth-subtitle">创建新账号，开始您的旅程</p>
+        <p class="auth-subtitle">创建新账号，开始您的体验</p>
       </div>
       
       <form @submit.prevent="handleRegister" class="auth-form">
@@ -46,7 +46,18 @@
           <div v-if="errors.password" class="error-message">{{ errors.password }}</div>
         </div>
         
-
+        <div class="form-group">
+          <label for="confirmPassword" class="form-label">确认密码</label>
+          <input
+            type="password"
+            id="confirmPassword"
+            v-model="form.confirmPassword"
+            class="form-input"
+            :class="{ 'is-invalid': errors.confirmPassword }"
+            placeholder="请再次输入密码"
+          >
+          <div v-if="errors.confirmPassword" class="error-message">{{ errors.confirmPassword }}</div>
+        </div>
         
         <button type="submit" class="auth-button" :disabled="loading">
           <span v-if="loading" class="loading-spinner"></span>
@@ -123,7 +134,7 @@ const handleRegister = async () => {
     ElMessage.success('注册成功');
     router.push('/');
   } catch (error) {
-    errors.value.server = error.response?.data?.message || '注册失败，请稍后重试';
+    errors.value.server = error.response?.data?.message || '注册失败，请稍后再试';
   } finally {
     loading.value = false;
   }
@@ -131,64 +142,75 @@ const handleRegister = async () => {
 </script>
 
 <style scoped>
+/* 基础样式重置与全局设置 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* 容器样式 */
 .auth-container {
   display: flex;
-  flex-direction: column;
+  justify-content: center;
+  align-items: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-  padding: 0;
-  margin: 0;
-  width: 100%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
+/* 卡片样式 */
 .auth-card {
   width: 100%;
-  max-width: 100%;
-  min-height: 100vh;
+  max-width: 420px;
   background-color: white;
-  border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  border-radius: 20px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
   overflow: hidden;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-  padding: 0;
+  transition: all 0.3s ease;
 }
 
 .auth-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
 }
 
+/* 头部样式 */
 .auth-header {
-  padding: 30px 30px 0;
+  padding: 40px 30px 20px;
   text-align: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
 }
 
 .auth-title {
   margin: 0 0 10px;
-  font-size: 24px;
-  color: #1d2129;
+  font-size: 28px;
+  font-weight: 700;
 }
 
 .auth-subtitle {
   margin: 0;
-  color: #86909c;
+  color: rgba(255, 255, 255, 0.8);
   font-size: 14px;
 }
 
+/* 表单样式 */
 .auth-form {
   padding: 30px;
 }
 
 .form-group {
-  margin-bottom: 20px;
+  margin-bottom: 25px;
+  position: relative;
 }
 
 .form-label {
   display: block;
   margin-bottom: 8px;
   font-weight: 500;
-  color: #1d2129;
+  color: #333;
   font-size: 14px;
 }
 
@@ -204,45 +226,53 @@ const handleRegister = async () => {
 
 .form-input:focus {
   outline: none;
-  border-color: #409eff;
-  box-shadow: 0 0 0 3px rgba(64, 158, 255, 0.15);
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
   background-color: white;
   transform: translateY(-1px);
-}
-
-.form-input:focus {
-  outline: none;
-  border-color: #409eff;
-  box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.2);
 }
 
 .form-input.is-invalid {
   border-color: #ff4d4f;
 }
 
+/* 错误消息样式 */
 .error-message {
-  margin-top: 5px;
+  margin-top: 6px;
   color: #ff4d4f;
-  font-size: 12px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+}
+
+.error-message::before {
+  content: '⚠️';
+  margin-right: 5px;
+  font-size: 14px;
+}
+
+/* 按钮样式 */
 .auth-button {
   width: 100%;
   padding: 14px;
-  background-color: #409eff;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border: none;
   border-radius: 8px;
   font-size: 16px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
-.auth-button:hover {
-  background-color: #3385ff;
+.auth-button:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(64, 158, 255, 0.3);
+  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
 }
 
 .auth-button:active {
@@ -263,20 +293,14 @@ const handleRegister = async () => {
 
 .auth-button:active::after {
   transform: translate(-50%, -50%) scale(1);
-} display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.auth-button:hover:not(:disabled) {
-  background-color: #337ecc;
 }
 
 .auth-button:disabled {
-  background-color: #a0cfff;
+  background: #a0cfff;
   cursor: not-allowed;
 }
 
+/* 加载动画 */
 .loading-spinner {
   display: inline-block;
   width: 20px;
@@ -291,24 +315,7 @@ const handleRegister = async () => {
   to { transform: rotate(360deg); }
 }
 
-.error-message {
-  margin-top: 6px;
-  color: #ff4d4f;
-  font-size: 13px;
-  display: flex;
-  align-items: center;
-}
-
-.error-message::before {
-  content: '⚠️';
-  margin-right: 5px;
-  font-size: 14px;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
+/* 底部样式 */
 .auth-footer {
   padding: 0 30px 30px;
   text-align: center;
@@ -317,8 +324,41 @@ const handleRegister = async () => {
 }
 
 .login-link {
-  color: #409eff;
+  color: #667eea;
   text-decoration: none;
   font-weight: 500;
+  transition: color 0.2s;
+}
+
+.login-link:hover {
+  color: #764ba2;
+  text-decoration: underline;
+}
+
+/* 响应式调整 */
+@media (max-width: 480px) {
+  .auth-card {
+    border-radius: 16px;
+  }
+
+  .auth-header {
+    padding: 30px 20px 15px;
+  }
+
+  .auth-title {
+    font-size: 24px;
+  }
+
+  .auth-form {
+    padding: 20px;
+  }
+
+  .form-input {
+    padding: 12px 15px;
+  }
+
+  .auth-button {
+    padding: 12px;
+  }
 }
 </style>

@@ -9,7 +9,7 @@
     <div class="detail-meta">
       <span class="category">{{ content.category }}</span>
       <span class="time">{{ formatDate(content.time) }}</span>
-      <span class="author">孙猴子源码</span>
+      <span class="author">港城源码</span>
             <span>浏览量：{{ content.views }}</span>
     </div>
     <div class="detail-cover">
@@ -87,21 +87,25 @@
     </div>
     <div class="horizontal-layout">
       <div class="detail-actions">
-        <router-link v-if="content.thesis_file" :to="{ name: 'ThesisViewer', params: { filePath: content.thesis_file } }" class="thesis-btn">浏览论文</router-link>
+        <!-- 判断是否为手机端 -->
+        <div v-if="content.thesis_file">
+         <!-- <button  @click="downloadThesis" class="thesis-btn download-btn" >下载论文</button>  -->
+          <router-link  :to="{ name: 'ThesisViewer', params: { filePath: content.thesis_file } }" style="margin-left:20px;" class="thesis-btn">浏览论文</router-link>
+        </div>
         <div v-else class="thesis-btn disabled-btn">暂无论文文件</div>
       </div>
       <div class="amount-section">
         <div class="amount">
           <span class="amount-value">{{ content.amount }}</span>
-          <span class="amount-unit">猫币</span>
+          <span class="amount-unit">RMB</span>
         </div>
         <button class="buy-button" @click="showWechatDialog = true">
           <i class="icon-shopping"></i> 点击➕微，获取资料
         </button>
 
-        <el-dialog v-model="showWechatDialog" title="联系我们" width="30%">
+        <el-dialog v-model="showWechatDialog" title="联系我们" width="70%">
           <div class="wechat-container">
-            <p class="wechat-title">微信号：<span class="wechat-value">sun-he</span></p>
+            <p class="wechat-title">微信号：<span class="wechat-value">my-name-sunhe</span></p>
             <div class="copy-button-container">
               <el-button type="primary" @click="copyWechat">复制微信号</el-button>
             </div>
@@ -115,7 +119,7 @@
 
 <script setup>
 import Navbar from '/src/components/Navbar.vue';
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from '../axios';
 import { ElDialog, ElButton, ElMessage } from 'element-plus';
@@ -123,7 +127,7 @@ import { ElDialog, ElButton, ElMessage } from 'element-plus';
 const showWechatDialog = ref(false);
 
 const copyWechat = () => {
-  navigator.clipboard.writeText('sun-he').then(() => {
+  navigator.clipboard.writeText('my-name-sunhe').then(() => {
     ElMessage({ message: '微信号复制成功', type: 'success' });
     showWechatDialog.value = false;
   }).catch(() => {
@@ -297,10 +301,37 @@ const goBack = () => {
   router.go(-1)
 }
 
+// 响应式判断是否为手机端
+const isMobile = ref(false);
+
+// 初始化判断屏幕尺寸
+const checkScreenSize = () => {
+  isMobile.value = window.innerWidth < 768;
+};
+
+// 下载论文文件
+const downloadThesis = () => {
+  if (content.value.thesis_file) {
+    // 创建一个临时链接用于下载
+    const link = document.createElement('a');
+    link.href = content.value.thesis_file;
+    link.download = content.value.title + '.docx'; // 设置下载文件名
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+};
+
 onMounted(() => {
   fetchContentDetail();
   fetchComments();
-})
+  checkScreenSize(); // 初始检查
+  window.addEventListener('resize', checkScreenSize); // 添加窗口大小变化监听
+});
+
+onUnmounted(() => {
+  window.removeEventListener('resize', checkScreenSize); // 移除监听
+});
 </script>
 
 <style scoped>
@@ -386,13 +417,10 @@ onMounted(() => {
 }
 
 .content-detail {
-  margin-top: 110px;
 
-  width:1880px;
   max-width: 100%;
   margin: 0 auto;
   padding: 24px;
-  margin-left:20%
 }
 
 @media (min-width: 768px) {
@@ -421,7 +449,7 @@ onMounted(() => {
   cursor: pointer;
   margin-right: 16px;
   padding: 8px;
-  width:100px;
+  width: auto;
 }
 
 .detail-title {
@@ -500,7 +528,11 @@ onMounted(() => {
   font-size: 14px;
 }
 
-
+.screenshot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
 
 .screenshot-img {
   width: 100%;
@@ -569,6 +601,7 @@ onMounted(() => {
   justify-content: space-between;
   gap: 20px;
   margin: 20px 0;
+  flex-wrap: wrap;
 }
 
 .horizontal-layout > div {
@@ -606,11 +639,24 @@ onMounted(() => {
   .features-text {
     font-size: 15px;
   }
+  .horizontal-layout {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .amount-section {
+    width: 100%;
+    justify-content: center;
+  }
+  .tech-tag {
+    padding: 4px 10px;
+    font-size: 12px;
+  }
 }
 
 @media (max-width: 480px) {
   .content-detail {
     padding: 16px;
+
   }
   .detail-meta {
     gap: 8px;
@@ -620,7 +666,20 @@ onMounted(() => {
     grid-template-columns: 1fr;
   }
   .replies-list {
-    margin-left: 20px;
+    margin-left: 10px;
+  }
+  .section-title {
+    font-size: 1.2rem;
+  }
+  .thesis-btn {
+    padding: 10px 20px;
+    font-size: 14px;
+  }
+  .buy-button {
+    padding: 10px 16px;
+    font-size: 14px;
+    width: 100%;
+    justify-content: center;
   }
 }
 

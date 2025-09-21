@@ -12,11 +12,10 @@
             :class="{ active: idx === currentIndex }"
             v-show="idx === currentIndex"
           >
-            
-              <img :src="item.image_url" :alt="item.title" class="carousel-img" />
-
+            <img :src="item.image_url" :alt="item.title" class="carousel-img" />
             <div class="carousel-title">{{ item.title }}</div>
           </div>
+         
           <button class="carousel-btn prev" @click="prev">‹</button>
           <button class="carousel-btn next" @click="next">›</button>
         </div>
@@ -28,58 +27,54 @@
       <div class="notice">
         <div class="notice-title">网站公告</div>
         <ul>
-          <li>什么？我们的毕业设计成品你还不会用？购买成品必看</li>
-          <li>好消息：学习源码分享群，你值得进入</li>
-          <li>100套计算机专业毕业设计指导，免费获取</li>
-          <li>计算机毕业设计论文写作技巧【精华总结】</li>
-          <li>计算机毕业设计防骗指南</li>
+          <li v-for="(item, index) in announcements" :key="item.id" @click="viewAnnouncementDetail(item.id)">
+            {{ item.title }}
+          </li>
+          <li v-if="!announcements.length" class="loading">加载中...</li>
         </ul>
       </div>
       <div class="member-center">
-        <div class="member-title">本站项目 提供项目售后答疑</div>
-        <div class="member-desc">孙猴子源码<br/>专注毕业设计8年，做优质的毕业设计指南<br/>如有需要，可点击下方任意方式找到我们</div>
+        <div class="member-title">本站项目售后答疑，全程护航你的毕设之路</div>
+        <div class="member-desc">8年深耕毕设领域，从机械图纸到代码编程，从论文框架到实验数据分析<br/>不管你是工科生、文科生、医学生还是艺术生，这里都有专属解决方案<br/>点击下方按钮，随时找到懂你的毕设搭子～</div>
         <div class="member-links">
-          <span>微信</span> <span>QQ</span> <span>GitHub</span> <span>B站</span>
+          <span @click="copyWechatId">微信</span> <span @click="copyQQId">QQ</span>
         </div>
       </div>
     </section>
-    <!-- 热门必读 -->
-    <section class="hot-section">
-      <div class="hot-title">【热门必读】什么？我们的毕业设计成品你还不会用？购买成品必看</div>
-      <div class="hot-desc">计算机毕业设计的成品不能用成品，该如何使用成品，很多同学没有概念，或者理解不全，今天我们就详细聊一下。另外不管你是不是购买过我们的系统，只要你是在做毕业设计，都可以借鉴。</div>
-    </section>
+
     <!-- 最新发布 -->
     <section class="latest-section">
       <div class="latest-title">最新发布</div>
-      <div class="latest-list">
-        <router-link v-for="item in contentList" :key="item.id" :to="'/content-detail/' + item.id" class="item-link">
-          <div class="latest-item">
-            <div class="item-cover">
-              <img :src="item.cover" alt="项目封面" class="cover-img" />
-            </div>
-            <div>
-              <div style='display:flex;flex-direction:row;justify-content:space-between'>
-                <div style='display:flex'>
+        <div>
+          <div v-if="contentList.length" class="latest-list">
+            <router-link v-for="item in contentList" :key="item.id" :to="'/content-detail/' + item.id" class="item-link">
+            <div class="latest-item">
+              <div class="item-cover">
+                <img :src="item.cover" alt="项目封面" class="cover-img" />
+              </div>
+              <div class="item-content">
+                <div class="item-header">
                   <div class="item-tag">{{ item.category }}</div>
                   <div class="item-title">{{ item.title }}</div>
                 </div>
-                <div class="item-meta">{{ formatDate(item.time) }} | 孙猴子源码 | 评论(0) | 赞(0)</div>
+                <div class="item-meta">{{ formatDate(item.time) }} | 港城源码 | 评论(0) | 赞(0)</div>
+                <div class="item-features">{{ item.features }}</div>
               </div>
-              <div class="item-features">{{ item.features }}</div>
             </div>
+          </router-link>
           </div>
-        </router-link>
-      </div>
+           <div v-else class="no-content">目前该专业暂未更新相关内容，我们正在全力补充完善中，敬请期待哦～</div>
+        </div>
     </section>
     <!-- 底部横幅 -->
     <footer class="footer-banner">
-      成品+代码讲解视频+演示视频+远程调试成功+软件，堪比定做。
+      在这里，看见每一份毕业设计里的独特锋芒
     </footer>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted,onUnmounted, getCurrentInstance } from 'vue';
 import Navbar from '/src/components/Navbar.vue';
 import { useRouter } from 'vue-router'
 import axios from '../axios'
@@ -87,364 +82,574 @@ import axios from '../axios'
 const banners = ref([])
 const currentIndex = ref(0)
 let timer = null
+const { appContext } = getCurrentInstance()
+const emitter = appContext.config.globalProperties.emitter
 const contentList = ref([])
 const userInfo = ref(null)
+const announcements = ref([])
 const router = useRouter()
 
 const fetchBanners = async () => {
   try {
     const res = await axios.get('/banner/list')
-    console.log(res)
-
     banners.value = res
   } catch (e) {
-    banners.value = []
+    console.error('获取轮播图失败:', e)
   }
 }
 
-const fetchContentList = async () => {
+const fetchContentList = async (category) => {
   try {
-    const res = await axios.get('/content/list')
-    console.log(res)
+    let res;
+    if(category){
+   res = await axios.get('/content/list', { 
+      params: { category } 
+    })
+    }else{
+      const storedMajor = JSON.parse(localStorage.getItem('selectedMajor'));
+      res = await axios.get('/content/list', { 
+        params: { category: storedMajor?.name || '' } 
+      })
+    }
+    
     contentList.value = res
   } catch (e) {
-    console.error('Failed to fetch content list:', e)
-    contentList.value = []
+    console.error('获取内容列表失败:', e)
   }
 }
 
-const formatDate = (isoString) => {
-  const date = new Date(isoString)
-  return date.toISOString().split('T')[0]
+const fetchAnnouncements = async () => {
+  try {
+    const res = await axios.get('/announcement/list')
+    announcements.value = res.data
+  } catch (e) {
+    console.error('获取公告列表失败:', e)
+  }
 }
 
-const next = () => {
-  if (!banners.value.length) return
-  currentIndex.value = (currentIndex.value + 1) % banners.value.length
+const viewAnnouncementDetail = (id) => {
+  router.push(`/announcement/${id}`)
 }
+
+const formatDate = (time) => {
+  const date = new Date(time)
+  return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`
+}
+
 const prev = () => {
-  if (!banners.value.length) return
   currentIndex.value = (currentIndex.value - 1 + banners.value.length) % banners.value.length
 }
 
-const startAutoPlay = () => {
-  timer = setInterval(next, 3000)
-}
-const stopAutoPlay = () => {
-  if (timer) clearInterval(timer)
+const next = () => {
+  currentIndex.value = (currentIndex.value + 1) % banners.value.length
 }
 
-const handleLogout = () => {
-  // 清除本地存储
+const startTimer = () => {
+  timer = setInterval(() => {
+    next()
+  }, 5000)
+}
 
-  localStorage.removeItem('user')
-  userInfo.value = null
-  // 清除axios默认headers
-  delete axios.defaults.headers.common['Authorization']
-  // 重定向到登录页
-  router.push('/login')
+const stopTimer = () => {
+  if (timer) {
+    clearInterval(timer)
+    timer = null
+  }
 }
 
 onMounted(() => {
   fetchBanners()
   fetchContentList()
-  startAutoPlay()
-  // 从localStorage获取用户信息
+  fetchAnnouncements()
+  startTimer()
+
+  emitter.on('select-category', (categoryId) => {
+    fetchContentList(categoryId)
+  })
+
+  // 检查本地存储中的用户信息
   const storedUser = localStorage.getItem('user')
   if (storedUser) {
     userInfo.value = JSON.parse(storedUser)
   }
 })
+
+onUnmounted(() => {
+  stopTimer()
+})
+
+// 复制微信号到剪贴板
+const copyQQId = () => {
+  navigator.clipboard.writeText('1816137925').then(() => {
+    alert('QQ号复制成功耶');
+  });
+};
+
+const copyWechatId = () => {
+  navigator.clipboard.writeText('my-name-sunhe')
+    .then(() => {
+      alert('微信号已复制成功耶')
+    })
+    .catch(err => {
+      console.error('复制失败:', err)
+      alert('复制失败，请手动复制: sunhe-666')
+    })
+}
 </script>
 
 <style scoped>
 .home-container {
-  margin-top: 110px;
-
-  font-family: 'PingFang SC', 'Microsoft YaHei', Arial, sans-serif;
-  background: #f7f8fa;
-  color: #333;
-  width: 100vw;
-  min-width: 0;
-  max-width: 100vw;
-  box-sizing: border-box;
-}
-.header {
-  display: flex;
-  justify-content: space-between;
-  padding: 8px 32px;
-  font-size: 14px;
-  background: #fff;
-  border-bottom: 1px solid #eee;
-}
-.header .auth-link {
-  color: #409eff;
-  text-decoration: none;
-  cursor: pointer;
+  padding-top: 150px; /* 为导航栏留出空间 */
+  min-height: 100vh;
 }
 
-.auth-link:hover {
-  text-decoration: underline;
-}
-
-.divider {
-  margin: 0 8px;
-  color: #ccc;
-}
-.main-nav {
-  display: flex;
-  align-items: center;
-  background: #fff;
-  padding: 16px 32px;
-  border-bottom: 1px solid #eee;
-}
-.logo {
-  display: flex;
-  align-items: center;
-}
-.logo img {
-  width: 40px;
-  height: 40px;
-  margin-right: 8px;
-}
-.site-title {
-  font-size: 22px;
-  font-weight: bold;
-  color: #409eff;
-}
-.nav-list {
-  display: flex;
-  margin-left: 40px;
-  list-style: none;
-  gap: 32px;
-}
-.nav-list li {
-  cursor: pointer;
-  font-size: 16px;
-  color: #333;
-  transition: color 0.2s;
-}
-.nav-list li:hover {
-  color: #409eff;
-}
+/* 轮播图样式 */
 .banner {
-  background: #ffb84d;
-  padding: 32px 0 24px 0;
-  display: flex;
-  justify-content: center;
-}
-.carousel-wrapper {
-  width: 700px;
-  min-height: 220px;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  overflow: hidden;
   position: relative;
-  background: #222d4a;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
+
+.carousel-wrapper {
+  width: 100%;
+  height: 400px;
+  position: relative;
+}
+
 .carousel {
   width: 100%;
   height: 100%;
   position: relative;
 }
+
 .carousel-item {
   width: 100%;
   height: 100%;
-  position: relative;
-}
-.carousel-item {
-  width: 100%;
-  height: 220px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
   position: absolute;
-  left: 0;
   top: 0;
-  opacity: 0;
+  left: 0;
   transition: opacity 0.5s;
-  z-index: 1;
+  opacity: 0;
 }
+
 .carousel-item.active {
   opacity: 1;
-  z-index: 2;
+  z-index: 1;
 }
+
 .carousel-img {
-  width: 650px;
-  height: 180px;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
 }
+
 .carousel-title {
-  color: #fff;
-  margin-top: 8px;
-  font-size: 16px;
-  text-align: center;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  color: white;
+  padding: 15px 20px;
+  font-size: 18px;
 }
+
 .carousel-btn {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  background: rgba(0,0,0,0.3);
-  color: #fff;
+  background-color: rgba(0, 0, 0, 0.3);
+  color: white;
   border: none;
-  border-radius: 50%;
-  width: 32px;
-  height: 32px;
-  font-size: 22px;
+  width: 40px;
+  height: 40px;
+  font-size: 24px;
   cursor: pointer;
-  z-index: 3;
-  transition: background 0.2s;
+  z-index: 10;
+  transition: background-color 0.3s;
 }
+
 .carousel-btn:hover {
-  background: rgba(0,0,0,0.5);
+  background-color: rgba(0, 0, 0, 0.5);
 }
-.carousel-btn.prev {
-  left: 12px;
+
+.prev {
+  left: 10px;
 }
-.carousel-btn.next {
-  right: 12px;
+
+.next {
+  right: 10px;
 }
+
 .carousel-loading {
-  color: #fff;
-  font-size: 18px;
-  text-align: center;
   width: 100%;
-}
-.info-section {
+  height: 100%;
   display: flex;
   justify-content: center;
-  gap: 32px;
-  margin: 24px 0;
+  align-items: center;
+  font-size: 18px;
+  color: #666;
 }
-.notice, .member-center {
-  background: #fff;
+
+/* 公告栏和会员中心 */
+.info-section {
+  max-width: 1200px;
+  margin: 30px auto;
+  display: flex;
+  gap: 20px;
+}
+
+.notice {
+  flex: 2;
+  background-color: white;
   border-radius: 8px;
-  padding: 20px 24px;
-  min-width: 320px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  padding: 20px;
 }
+
 .notice-title {
+  font-size: 18px;
   font-weight: bold;
-  margin-bottom: 12px;
-  color: #409eff;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eee;
 }
+
 .notice ul {
-  padding-left: 18px;
-  font-size: 14px;
-  color: #666;
+  list-style: none;
+  padding: 0;
+  margin: 0;
 }
-.member-title {
-  color: #b48be7;
-  font-weight: bold;
-  margin-bottom: 8px;
-  font-size: 16px;
-}
-.member-desc {
-  font-size: 14px;
-  color: #666;
-  margin-bottom: 8px;
-}
-.member-links span {
-  margin-right: 10px;
-  color: #409eff;
+
+.notice li {
+  padding: 10px 0;
+  border-bottom: 1px dashed #eee;
   cursor: pointer;
+  transition: color 0.3s;
 }
-.hot-section {
-  background: #fff;
-  margin: 0 32px 24px 32px;
+
+.notice li:hover {
+  color: #42b983;
+}
+
+.member-center {
+  flex: 1;
+  background-color: #f9f9f9;
   border-radius: 8px;
-  padding: 18px 24px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.03);
-}
-.hot-title {
-  color: #ff4d4f;
-  font-weight: bold;
-  font-size: 18px;
-  margin-bottom: 8px;
-}
-.hot-desc {
-  color: #666;
-  font-size: 14px;
-}
-.latest-section {
-  background: #fff;
-  margin: 0 32px 24px 32px;
-  border-radius: 8px;
-  padding: 18px 24px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.03);
-}
-.latest-title {
-  font-size: 18px;
-  font-weight: bold;
-  margin-bottom: 12px;
-}
-.latest-list {
+  padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  align-items: center;
+  text-align: center;
 }
-.latest-item {
+
+.member-title {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 15px;
+}
+
+.member-desc {
+  margin-bottom: 20px;
+  color: #666;
+}
+
+.member-links {
   display: flex;
-  padding: 16px;
-  border-bottom: 1px solid #eee;
-  gap: 16px;
+  gap: 15px;
 }
+
+.member-links span {
+  cursor: pointer;
+  padding: 8px 12px;
+  background-color: #42b983;
+  color: white;
+  border-radius: 4px;
+  transition: background-color 0.3s;
+}
+
+.member-links span:hover {
+  background-color: #359469;
+}
+
+/* 热门必读 */
+.hot-section {
+  max-width: 1200px;
+  margin: 30px auto;
+  background-color: #fff7e6;
+  border-radius: 8px;
+  padding: 25px;
+}
+
+.hot-title {
+  font-size: 20px;
+  font-weight: bold;
+  margin-bottom: 15px;
+  color: #e67e22;
+}
+
+.hot-desc {
+  line-height: 1.6;
+  color: #666;
+}
+
+/* 最新发布 */
+.latest-section {
+  max-width: 1200px;
+  margin: 30px auto;
+  padding: 0 15px;
+}
+
+.latest-title {
+  font-size: 22px;
+  font-weight: bold;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #42b983;
+  display: inline-block;
+}
+
+.latest-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  width: 100%;
+}
+
+.no-content {
+  text-align: center;
+  padding: 60px 20px;
+  color: #666;
+  font-size: 16px;
+  background-color: #fff;
+  border-radius: 8px;
+  margin: 20px;
+}
+
+.item-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+  width: calc((100% - 20px) / 2);
+  padding: 15px;
+  border-radius: 8px;
+  background-color: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.latest-item {
+  background-color: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  transition: transform 0.3s, box-shadow 0.3s;
+  display: flex;
+  height: 180px;
+  width: 100%;
+}
+
+.latest-item:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+}
+
 .item-cover {
-  width: 100px;
-  height: 100px;
+  width: 200px;
   flex-shrink: 0;
 }
+
 .cover-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 4px;
 }
+
+.item-content {
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  flex: 1;
+}
+
+.item-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .item-tag {
-  display: inline-block;
-  margin-right: 8px;
-  padding: 4px 8px;
-  background: #f0f2f5;
-  color: #409eff;
+  background-color: #42b983;
+  color: white;
+  padding: 3px 8px;
   border-radius: 4px;
   font-size: 12px;
-  margin-bottom: 8px;
+  white-space: nowrap;
 }
+
 .item-title {
   font-size: 16px;
-  margin-bottom: 8px;
-  color: #333;
+  font-weight: bold;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
+
 .item-meta {
   font-size: 12px;
   color: #999;
+  margin-top: auto;
+  margin-bottom: 8px;
 }
+
 .item-features {
   font-size: 14px;
   color: #666;
-  margin: 8px 0;
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
-  line-height: 1.5;
 }
-.item-desc {
-  font-size: 14px;
-  color: #666;
-}
+
+/* 底部横幅 */
 .footer-banner {
-  background: #4d9aff;
-  color: #fff;
+  max-width: 1200px;
+  margin: 50px auto 0;
+  background-color: #42b983;
+  color: white;
   text-align: center;
-  padding: 12px 0;
-  font-size: 16px;
-  margin-top: 24px;
-  border-radius: 0 0 8px 8px;
+  padding: 25px;
+  font-size: 18px;
+  border-radius: 8px 8px 0 0;
+  margin-bottom: 60px;
+}
+
+/* 响应式样式 */
+@media (min-width: 1200px) {
+  .latest-section {
+    padding: 0;
+  }
+  .latest-list {
+    gap: 25px;
+  }
+  .item-link {
+    width: calc((100% - 25px) / 2);
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1199px) {
+  .latest-list {
+    gap: 20px;
+  }
+  .item-link {
+    width: calc((100% - 20px) / 2);
+  }
+}
+
+@media (max-width: 768px) {
+  .home-container {
+    padding-top: 130px;
+  }
+  
+  .carousel-wrapper {
+    height: 250px;
+  }
+  
+  .carousel-title {
+    font-size: 16px;
+    padding: 12px 15px;
+  }
+  
+  .carousel-btn {
+    width: 30px;
+    height: 30px;
+    font-size: 18px;
+  }
+  
+  .info-section {
+    flex-direction: column;
+  }
+  
+  .notice, .member-center {
+    width: 100%;
+  }
+  
+  .member-center {
+    margin-top: 20px;
+  }
+  
+  .hot-section {
+    padding: 20px;
+  }
+  
+  /* 最新发布列表响应式调整 */
+  .latest-list {
+    flex-direction: column;
+    gap: 15px;
+  }
+  .item-link {
+    width: 100%;
+  }
+  .latest-item {
+    flex-direction: column;
+    height: auto;
+  }
+  
+  .item-cover {
+    width: 100%;
+    height: 160px;
+  }
+  
+  .item-content {
+    padding: 12px;
+  }
+  
+  .item-title {
+    font-size: 15px;
+    margin-top: 8px;
+    white-space: normal;
+    overflow: visible;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    display: -webkit-box;
+  }
+  
+  .item-features {
+    font-size: 13px;
+    -webkit-line-clamp: 3;
+  }
+}
+
+@media (max-width: 480px) {
+  .home-container {
+    padding-top: 110px;
+  }
+  
+  .carousel-wrapper {
+    height: 180px;
+  }
+  
+  .latest-title {
+    font-size: 18px;
+  }
+  
+  .item-cover {
+    height: 140px;
+  }
+  
+  .item-title {
+    font-size: 14px;
+  }
+  
+  .item-features {
+    font-size: 12px;
+  }
 }
 </style>
