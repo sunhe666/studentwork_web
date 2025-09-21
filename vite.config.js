@@ -12,47 +12,56 @@ export default defineConfig({
   ],
   server: {
    
-   proxy: {
+     proxy: {
       '/banner': {
-        target: 'http://sunhe.site',
-            // target: 'http://sunhe.site',
+        target: 'https://bishe.asia',
         changeOrigin: true,
+        secure: true,
       },
       '/content': {
-        target: 'http://sunhe.site',
+        target: 'https://bishe.asia',
         changeOrigin: true,
+        secure: true,
       },
       '/category': {
-        target: 'http://sunhe.site',
+        target: 'https://bishe.asia',
         changeOrigin: true,
+        secure: true,
       },
       '/announcement': {
-        target: 'http://sunhe.site',
+        target: 'https://bishe.asia',
         changeOrigin: true,
+        secure: true,
       },
        '/comment': {
-        target: 'http://sunhe.site',
+        target: 'https://bishe.asia',
         changeOrigin: true,
+        secure: true,
       },
       '/user': {
-        target: 'http://sunhe.site',
+        target: 'https://bishe.asia',
         changeOrigin: true,
+        secure: true,
       },
       '/thesis': {
-        target: 'http://sunhe.site',
+        target: 'https://bishe.asia',
         changeOrigin: true,
+        secure: true,
       },
         '/ai': {
-        target: 'http://sunhe.site',
+        target: 'https://bishe.asia',
         changeOrigin: true,
+        secure: true,
       },
         '/cooperation': {
-        target: 'http://sunhe.site',
+        target: 'https://bishe.asia',
         changeOrigin: true,
+        secure: true,
       },
     '/recruitment': {
-        target: 'http://sunhe.site',
+        target: 'https://bishe.asia',
         changeOrigin: true,
+        secure: true,
       },
       '/api/proxy': {
         target: 'https://sunhe197428.oss-cn-beijing.aliyuncs.com',
@@ -61,7 +70,7 @@ export default defineConfig({
           // 配置CORS响应头
           configure: (proxy, options) => {
             proxy.on('proxyRes', (proxyRes, req, res) => {
-              res.setHeader('Access-Control-Allow-Origin', 'https://www.sunhe.site');
+              res.setHeader('Access-Control-Allow-Origin', 'https://bishe.asia');
               res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
               res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
             });

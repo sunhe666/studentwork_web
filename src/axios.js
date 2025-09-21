@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 const instance = axios.create({
-  baseURL: 'https://sunhe.site', // 可根据需要修改
+  baseURL: 'https://bishe.asia', // 更新为新的后端API地址
   timeout: 10000,
 })
 

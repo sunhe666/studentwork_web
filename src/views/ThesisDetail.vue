@@ -129,7 +129,7 @@ const ensureHttps = (url) => {
   // 检查是否是代理路径
   if (url.startsWith('/api/proxy')) {
     // 生产环境中，代理路径应该通过HTTPS访问
-    const proxyUrl = 'https://sunhe.site' + url;
+    const proxyUrl = 'https://bishe.asia' + url;
     console.log('代理路径URL:', proxyUrl);
     return proxyUrl;
   }
@@ -138,7 +138,7 @@ const ensureHttps = (url) => {
   if (url.includes('sunhe197428.oss-cn-beijing.aliyuncs.com')) {
     // 转换为代理路径，并确保使用HTTPS
     const imagePath = url.substring(url.indexOf('/images'));  
-   const proxyUrl = 'https://www.sunhe.site/api/proxy' + imagePath;
+   const proxyUrl = 'https://bishe.asia/api/proxy' + imagePath;
    // const proxyUrl = 'http://localhost:5174/api/proxy' + imagePath;
    
     console.log('阿里云OSS转换后的代理URL:', proxyUrl);
