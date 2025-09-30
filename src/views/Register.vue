@@ -155,45 +155,183 @@ const handleRegister = async () => {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   padding: 20px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  position: relative;
+  overflow: hidden;
+  
+  /* 多层渐变背景 - 使用不同的色彩组合 */
+  background: 
+    radial-gradient(circle at 15% 85%, rgba(138, 43, 226, 0.8) 0%, transparent 50%),
+    radial-gradient(circle at 85% 15%, rgba(255, 20, 147, 0.8) 0%, transparent 50%),
+    radial-gradient(circle at 45% 45%, rgba(0, 191, 255, 0.8) 0%, transparent 50%),
+    linear-gradient(135deg, #8a2be2 0%, #ff1493 50%, #00bfff 100%);
+  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%;
+  animation: backgroundShift 25s ease-in-out infinite;
+}
+
+/* 背景动画 */
+@keyframes backgroundShift {
+  0%, 100% {
+    background-position: 0% 50%, 100% 50%, 50% 0%, 0% 0%;
+  }
+  50% {
+    background-position: 100% 50%, 0% 50%, 50% 100%, 100% 100%;
+  }
+}
+
+/* 动态粒子背景 */
+.auth-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.25) 2px, transparent 2px),
+    radial-gradient(circle at 70% 70%, rgba(255, 255, 255, 0.2) 1px, transparent 1px),
+    radial-gradient(circle at 55% 15%, rgba(255, 255, 255, 0.15) 1.5px, transparent 1.5px),
+    radial-gradient(circle at 15% 85%, rgba(255, 255, 255, 0.3) 1px, transparent 1px);
+  background-size: 120px 120px, 90px 90px, 140px 140px, 160px 160px;
+  animation: particleFloat 35s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes particleFloat {
+  0% {
+    transform: translateY(0) rotate(0deg);
+  }
+  100% {
+    transform: translateY(-120px) rotate(360deg);
+  }
+}
+
+/* 流动光效 */
+.auth-container::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: conic-gradient(
+    from 45deg,
+    transparent,
+    rgba(255, 255, 255, 0.08),
+    transparent,
+    rgba(255, 255, 255, 0.12),
+    transparent
+  );
+  animation: rotate 25s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* 卡片样式 */
 .auth-card {
   width: 100%;
-  max-width: 420px;
-  background-color: white;
-  border-radius: 20px;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+  max-width: 440px;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(25px);
+  border-radius: 28px;
+  box-shadow: 
+    0 25px 70px rgba(0, 0, 0, 0.15),
+    0 0 0 1px rgba(255, 255, 255, 0.25);
   overflow: hidden;
-  transition: all 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  position: relative;
+  z-index: 10;
+}
+
+.auth-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, 
+    rgba(138, 43, 226, 0.05) 0%, 
+    transparent 50%, 
+    rgba(255, 20, 147, 0.05) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
 }
 
 .auth-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  transform: translateY(-10px) scale(1.015);
+  box-shadow: 
+    0 35px 90px rgba(0, 0, 0, 0.2),
+    0 0 0 1px rgba(255, 255, 255, 0.35);
+}
+
+.auth-card:hover::before {
+  opacity: 1;
 }
 
 /* 头部样式 */
 .auth-header {
-  padding: 40px 30px 20px;
+  padding: 50px 36px 30px;
   text-align: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #8a2be2 0%, #ff1493 50%, #00bfff 100%);
   color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, 
+    transparent, 
+    rgba(255, 255, 255, 0.12), 
+    transparent);
+  animation: shimmer 4s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
 }
 
 .auth-title {
-  margin: 0 0 10px;
-  font-size: 28px;
-  font-weight: 700;
+  margin: 0 0 14px;
+  font-size: 34px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #ffffff 0%, #e8e8e8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  position: relative;
+  z-index: 1;
 }
 
 .auth-subtitle {
   margin: 0;
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 14px;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 16px;
+  font-weight: 300;
+  position: relative;
+  z-index: 1;
 }
 
 /* 表单样式 */

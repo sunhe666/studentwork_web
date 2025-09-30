@@ -128,45 +128,183 @@ const handleLogin = async () => {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   padding: 20px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  position: relative;
+  overflow: hidden;
+  
+  /* 多层渐变背景 */
+  background: 
+    radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.8) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.8) 0%, transparent 50%),
+    radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.8) 0%, transparent 50%),
+    linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%;
+  animation: backgroundShift 20s ease-in-out infinite;
+}
+
+/* 背景动画 */
+@keyframes backgroundShift {
+  0%, 100% {
+    background-position: 0% 50%, 100% 50%, 50% 0%, 0% 0%;
+  }
+  50% {
+    background-position: 100% 50%, 0% 50%, 50% 100%, 100% 100%;
+  }
+}
+
+/* 动态粒子背景 */
+.auth-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.2) 2px, transparent 2px),
+    radial-gradient(circle at 75% 75%, rgba(255, 255, 255, 0.15) 1px, transparent 1px),
+    radial-gradient(circle at 50% 10%, rgba(255, 255, 255, 0.1) 1.5px, transparent 1.5px),
+    radial-gradient(circle at 10% 90%, rgba(255, 255, 255, 0.25) 1px, transparent 1px);
+  background-size: 100px 100px, 80px 80px, 120px 120px, 150px 150px;
+  animation: particleFloat 30s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes particleFloat {
+  0% {
+    transform: translateY(0) rotate(0deg);
+  }
+  100% {
+    transform: translateY(-100px) rotate(360deg);
+  }
+}
+
+/* 流动光效 */
+.auth-container::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: conic-gradient(
+    from 0deg,
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
+  animation: rotate 20s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* 卡片样式 */
 .auth-card {
   width: 100%;
   max-width: 420px;
-  background-color: white;
-  border-radius: 20px;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border-radius: 24px;
+  box-shadow: 
+    0 20px 60px rgba(0, 0, 0, 0.12),
+    0 0 0 1px rgba(255, 255, 255, 0.2);
   overflow: hidden;
-  transition: all 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  position: relative;
+  z-index: 10;
+}
+
+.auth-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, 
+    rgba(255, 255, 255, 0.1) 0%, 
+    transparent 50%, 
+    rgba(255, 255, 255, 0.1) 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
 }
 
 .auth-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 
+    0 32px 80px rgba(0, 0, 0, 0.18),
+    0 0 0 1px rgba(255, 255, 255, 0.3);
+}
+
+.auth-card:hover::before {
+  opacity: 1;
 }
 
 /* 头部样式 */
 .auth-header {
-  padding: 40px 30px 20px;
+  padding: 48px 36px 28px;
   text-align: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
   color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, 
+    transparent, 
+    rgba(255, 255, 255, 0.1), 
+    transparent);
+  animation: shimmer 3s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
 }
 
 .auth-title {
-  margin: 0 0 10px;
-  font-size: 28px;
-  font-weight: 700;
+  margin: 0 0 12px;
+  font-size: 32px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  position: relative;
+  z-index: 1;
 }
 
 .auth-subtitle {
   margin: 0;
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 14px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 15px;
+  font-weight: 300;
+  position: relative;
+  z-index: 1;
 }
 
 /* 表单样式 */

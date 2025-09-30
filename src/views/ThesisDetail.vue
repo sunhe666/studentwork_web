@@ -64,7 +64,13 @@
             <button @click="scale += 0.1">放大</button>
             <button @click="scale > 0.2 ? scale -= 0.1 : 0.1">缩小</button>
           </div>
-          <p class="pdf-tip" v-if="!pdfLoaded">{{ pdfErrorMessage || '提示：如果无法在线预览，请点击下方的下载按钮' }}</p>
+          <div v-if="!pdfLoaded" class="pdf-error-section">
+            <p class="pdf-tip">{{ pdfErrorMessage || '提示：如果无法在线预览，请点击下方的下载按钮' }}</p>
+            <div v-if="pdfErrorMessage" class="pdf-retry-buttons">
+              <button @click="retryLoadPdf" class="retry-button">重新加载PDF</button>
+              <button @click="downloadThesis" class="download-button">直接下载</button>
+            </div>
+          </div>
         </div>
 
         <div class="thesis-body" v-html="thesis.content"></div>
@@ -128,19 +134,34 @@ const ensureHttps = (url) => {
   
   // 检查是否是代理路径
   if (url.startsWith('/api/proxy')) {
-    // 生产环境中，代理路径应该通过HTTPS访问
-    const proxyUrl = 'https://bishe.asia' + url;
+    // 根据当前环境选择基础URL
+    const baseUrl = window.location.hostname === 'localhost' ? 'http://localhost:3000' : 'https://bishe.asia';
+    const proxyUrl = baseUrl + url;
     console.log('代理路径URL:', proxyUrl);
     return proxyUrl;
   }
   
   // 检查是否是阿里云OSS路径
   if (url.includes('sunhe197428.oss-cn-beijing.aliyuncs.com')) {
-    // 转换为代理路径，并确保使用HTTPS
-    const imagePath = url.substring(url.indexOf('/images'));  
-   const proxyUrl = 'https://bishe.asia/api/proxy' + imagePath;
-   // const proxyUrl = 'http://localhost:5174/api/proxy' + imagePath;
-   
+    // 提取文件路径部分
+    let filePath = '';
+    try {
+      const urlObj = new URL(url);
+      filePath = urlObj.pathname; // 获取路径部分，如 /images/xxx.pdf
+    } catch (e) {
+      // 如果URL解析失败，尝试手动提取
+      const pathMatch = url.match(/\/images\/.*$/);
+      if (pathMatch) {
+        filePath = pathMatch[0];
+      } else {
+        console.error('无法提取文件路径:', url);
+        return url; // 返回原始URL作为备选
+      }
+    }
+    
+    // 构建代理URL
+    const baseUrl = window.location.hostname === 'localhost' ? 'http://localhost:3000' : 'https://bishe.asia';
+    const proxyUrl = `${baseUrl}/api/proxy${filePath}`;
     console.log('阿里云OSS转换后的代理URL:', proxyUrl);
     return proxyUrl;
   }
@@ -382,9 +403,64 @@ const onPdfRendered = () => {
 // PDF加载错误处理
 const onPdfError = (event) => {
   pdfLoaded.value = false;
-  pdfErrorMessage.value = `PDF加载失败: ${event.toString()}`;
   console.error('PDF加载错误详情:', event);
-  ElMessage.error(`PDF加载失败: ${event.toString()}`);
+  
+  // 更友好的错误信息
+  let errorMessage = 'PDF加载失败';
+  if (event && typeof event === 'string') {
+    if (event.includes('404')) {
+      errorMessage = 'PDF文件不存在或已被移动';
+    } else if (event.includes('403')) {
+      errorMessage = 'PDF文件访问权限不足';
+    } else if (event.includes('CORS')) {
+      errorMessage = '正在尝试通过代理访问PDF文件...';
+    } else if (event.includes('timeout')) {
+      errorMessage = 'PDF文件加载超时，请稍后重试';
+    } else {
+      errorMessage = `PDF加载失败: ${event}`;
+    }
+  }
+  
+  pdfErrorMessage.value = errorMessage;
+  
+  // 如果是CORS错误，尝试自动重新加载使用代理URL
+  if (event && event.toString().includes('CORS') && thesis.value && thesis.value.thesis_file) {
+    console.log('检测到CORS错误，尝试重新加载PDF...');
+    setTimeout(() => {
+      const currentUrl = thesis.value.thesis_file;
+      thesis.value.thesis_file = '';
+      setTimeout(() => {
+        thesis.value.thesis_file = ensureHttps(currentUrl);
+        console.log('重新设置PDF URL:', thesis.value.thesis_file);
+      }, 500);
+    }, 1000);
+  } else {
+    ElMessage.error(errorMessage);
+  }
+};
+
+// 重新加载PDF
+const retryLoadPdf = () => {
+  if (!thesis.value || !thesis.value.thesis_file) {
+    ElMessage.warning('没有可重新加载的PDF文件');
+    return;
+  }
+  
+  console.log('用户手动重新加载PDF');
+  pdfErrorMessage.value = '';
+  pdfLoaded.value = false;
+  pdfLoadingProgress.value = 0;
+  
+  // 强制重新加载PDF
+  const originalUrl = thesis.value.thesis_file;
+  thesis.value.thesis_file = '';
+  
+  setTimeout(() => {
+    // 确保使用代理URL
+    thesis.value.thesis_file = ensureHttps(originalUrl);
+    console.log('重新加载PDF URL:', thesis.value.thesis_file);
+    ElMessage.info('正在重新加载PDF，请稍候...');
+  }, 300);
 };
 
 // 下载论文
@@ -393,13 +469,26 @@ const downloadThesis = () => {
     ElMessage.warning('没有可下载的论文文件');
     return;
   }
-  // 创建一个临时链接来触发下载
-  const link = document.createElement('a');
-  link.href = ensureHttps(thesis.value.thesis_file);
-  link.download = thesis.value.thesis_file.split('/').pop() || 'thesis.pdf';
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+  
+  try {
+    // 使用代理URL进行下载
+    const downloadUrl = ensureHttps(thesis.value.thesis_file);
+    console.log('下载PDF URL:', downloadUrl);
+    
+    // 创建一个临时链接来触发下载
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = thesis.value.thesis_file.split('/').pop() || 'thesis.pdf';
+    link.target = '_blank'; // 在新标签页打开
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    ElMessage.success('开始下载论文文件');
+  } catch (error) {
+    console.error('下载失败:', error);
+    ElMessage.error('下载失败，请稍后重试');
+  }
 };
 
 // 更新阅读量
@@ -913,6 +1002,49 @@ onMounted(() => {
   text-align: center;
   color: #999;
   font-size: 14px;
+  margin-bottom: 15px;
+}
+
+.pdf-error-section {
+  text-align: center;
+  padding: 20px;
+}
+
+.pdf-retry-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 15px;
+}
+
+.retry-button {
+  padding: 8px 20px;
+  background-color: #409eff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.retry-button:hover {
+  background-color: #337ecc;
+}
+
+.pdf-retry-buttons .download-button {
+  padding: 8px 20px;
+  background-color: #67c23a;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.pdf-retry-buttons .download-button:hover {
+  background-color: #529b2e;
 }
 
 .thesis-stats .stat-item {
