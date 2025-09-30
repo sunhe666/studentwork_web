@@ -71,30 +71,108 @@ const loadAndRenderDocument = async () => {
     // 在所有环境中将HTTP协议替换为HTTPS
     requestUrl = requestUrl.replace(/^http:/, 'https:');
 
-   
+    if (!isProduction) {
       // 开发环境使用代理
       requestUrl = requestUrl.replace('https://sunhe197428.oss-cn-beijing.aliyuncs.com', '/api/proxy');
+    }
     
     // 生产环境直接使用HTTPS URL
     console.log('请求URL:', requestUrl);
 
-    const response = await fetch(requestUrl, {
+    // 使用axios代替fetch，更好的错误处理
+    const response = await axios.get(requestUrl, {
+      responseType: 'blob',
+      timeout: 30000, // 30秒超时
       headers: {
-        'Access-Control-Allow-Origin': '*'
-      },
-      credentials: 'include'
+        'Accept': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/octet-stream,*/*'
+      }
     });
 
-    if (!response.ok) {
-      throw new Error('无法加载论文文件，状态码: ' + response.status);
+    const blob = response.data;
+    
+    // 验证blob是否为有效的docx文件
+    if (blob.size === 0) {
+      throw new Error('文件内容为空，请检查文件是否存在');
     }
 
-    const blob = await response.blob();
+    // 检查文件类型
+    if (blob.type && !blob.type.includes('application/vnd.openxmlformats-officedocument.wordprocessingml.document') && 
+        !blob.type.includes('application/octet-stream')) {
+      console.warn('文件类型可能不正确:', blob.type);
+    }
+
     // 清空容器并重新渲染
-    docxContainer.value.innerHTML = '';
-    await renderAsync(blob, docxContainer.value, null, renderOptions.value);
+    if (docxContainer.value) {
+      docxContainer.value.innerHTML = '';
+      
+      // 添加更详细的渲染选项
+      const extendedOptions = {
+        ...renderOptions.value,
+        debug: false,
+        experimental: true,
+        trimXmlDeclaration: true,
+        useBase64URL: false,
+        useMathMLPolyfill: true,
+        showChanges: false,
+        renderChanges: false,
+        renderFootnotes: true,
+        renderEndnotes: true,
+        renderHeaders: true,
+        renderFooters: true
+      };
+
+      try {
+        await renderAsync(blob, docxContainer.value, null, extendedOptions);
+      } catch (renderError) {
+        console.error('docx-preview渲染失败:', renderError);
+        
+        // 如果是zip相关错误，尝试备用方案
+        if (renderError.message.includes('zip') || renderError.message.includes('central directory')) {
+          throw new Error('文件格式不支持或已损坏。支持的格式：.docx文件');
+        } else {
+          // 其他渲染错误，显示通用错误信息
+          docxContainer.value.innerHTML = `
+            <div style="padding: 20px; text-align: center; color: #666;">
+              <h3>文档渲染失败</h3>
+              <p>无法显示此文档，可能的原因：</p>
+              <ul style="text-align: left; display: inline-block;">
+                <li>文件格式不受支持</li>
+                <li>文件已损坏</li>
+                <li>网络连接问题</li>
+              </ul>
+              <p>请尝试刷新页面或联系管理员。</p>
+              <button onclick="location.reload()" style="
+                padding: 8px 16px; 
+                background-color: #42b983; 
+                color: white; 
+                border: none; 
+                border-radius: 4px; 
+                cursor: pointer;
+                margin-top: 10px;
+              ">刷新页面</button>
+            </div>
+          `;
+          throw renderError;
+        }
+      }
+    } else {
+      throw new Error('文档容器未找到');
+    }
   } catch (err) {
-    error.value = err.message || '加载论文时发生错误';
+    console.error('加载文档时出错:', err);
+    
+    // 提供更具体的错误信息
+    if (err.code === 'ECONNABORTED' || err.message.includes('timeout')) {
+      error.value = '文件加载超时，请检查网络连接后重试';
+    } else if (err.message.includes('404')) {
+      error.value = '文件未找到，可能已被删除或移动';
+    } else if (err.message.includes('403')) {
+      error.value = '没有权限访问该文件';
+    } else if (err.message.includes('zip') || err.message.includes('central directory')) {
+      error.value = '文件格式错误或文件已损坏，请联系管理员';
+    } else {
+      error.value = err.message || '加载论文时发生错误，请稍后重试';
+    }
   } finally {
     loading.value = false;
   }
