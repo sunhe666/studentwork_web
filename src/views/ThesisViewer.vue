@@ -17,7 +17,7 @@ import { ref, onMounted, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { renderAsync } from 'docx-preview';
 import { ElMessage } from 'element-plus';
-import axios from '/src/axios.js';
+import axios from 'axios'; // 使用原生axios，避免响应拦截器影响blob响应
 
 const route = useRoute();
 const router = useRouter();
@@ -79,20 +79,34 @@ const loadAndRenderDocument = async () => {
     
     console.log('请求URL:', requestUrl);
 
-    // 使用axios代替fetch，更好的错误处理
+    // 获取token用于认证
+    const token = localStorage.getItem('token');
+    
+    // 使用原生axios，包含完整配置
     const response = await axios({
       method: 'GET',
       url: requestUrl,
+      baseURL: 'https://bishe.asia', // 使用完整的API地址
       responseType: 'blob',
       timeout: 30000, // 30秒超时
       headers: {
-        'Accept': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/octet-stream,*/*'
+        'Accept': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/octet-stream,*/*',
+        ...(token && { 'Authorization': `Bearer ${token}` }) // 添加认证token
       }
     });
+
+    // 检查响应是否成功
+    if (!response || !response.data) {
+      throw new Error('服务器返回了空的响应，请稍后重试');
+    }
 
     const blob = response.data;
     
     // 验证blob是否为有效的docx文件
+    if (!blob || typeof blob.size === 'undefined') {
+      throw new Error('服务器返回的文件数据无效');
+    }
+    
     if (blob.size === 0) {
       throw new Error('文件内容为空，请检查文件是否存在');
     }
