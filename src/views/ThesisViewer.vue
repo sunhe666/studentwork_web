@@ -65,22 +65,24 @@ const loadAndRenderDocument = async () => {
       throw new Error('未找到论文文件路径');
     }
 
-    const isProduction = import.meta.env.PROD;
     let requestUrl = filePath;
 
     // 在所有环境中将HTTP协议替换为HTTPS
     requestUrl = requestUrl.replace(/^http:/, 'https:');
 
-    if (!isProduction) {
-      // 开发环境使用代理
-      requestUrl = requestUrl.replace('https://sunhe197428.oss-cn-beijing.aliyuncs.com', '/api/proxy');
+    // 在所有环境中都使用后端代理来避免CORS问题
+    if (requestUrl.includes('sunhe197428.oss-cn-beijing.aliyuncs.com')) {
+      // 使用后端代理接口
+      const encodedUrl = encodeURIComponent(requestUrl);
+      requestUrl = `/api/proxy?url=${encodedUrl}`;
     }
     
-    // 生产环境直接使用HTTPS URL
     console.log('请求URL:', requestUrl);
 
     // 使用axios代替fetch，更好的错误处理
-    const response = await axios.get(requestUrl, {
+    const response = await axios({
+      method: 'GET',
+      url: requestUrl,
       responseType: 'blob',
       timeout: 30000, // 30秒超时
       headers: {
