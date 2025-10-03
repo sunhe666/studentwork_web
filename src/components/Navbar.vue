@@ -65,9 +65,9 @@
             <span>毕设分类</span>
           </li>
         </router-link>
-        <router-link to="/thesis-guide" class="nav-link">
+        <router-link to="/ai-assistant" class="nav-link">
           <li class="nav-item">
-            <img :src="$route.path === '/thesis-guide' ? wuguan2 : wuguan" alt="Ai助手" class="nav-icon">
+            <img :src="$route.path.startsWith('/ai-assistant') || $route.path.startsWith('/thesis-guidance-chat') || $route.path.startsWith('/thesis-reduction') ? wuguan2 : wuguan" alt="Ai助手" class="nav-icon">
             <span>Ai助手</span>
           </li>
         </router-link>
@@ -178,7 +178,17 @@ const selectCategory = (category) => {
     selectedMajor.value = category;
     localStorage.setItem('selectedMajor', JSON.stringify(category));
     showMajorModal.value = false;
-    emitter.emit('select-category', category.name);
+    
+    // 发射专业切换事件
+    console.log('Navbar: 发射专业切换事件:', category.name);
+    if (emitter) {
+      emitter.emit('select-category', category.name);
+    } else {
+      console.warn('Navbar: emitter 不可用');
+    }
+    
+    // 显示切换成功提示
+    ElMessage.success(`已切换到 ${category.name} 专业`);
   };
 
 const showNotDeveloped = () => {

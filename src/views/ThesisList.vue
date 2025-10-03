@@ -119,7 +119,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, onUnmounted, computed, getCurrentInstance } from 'vue';
 import { useRouter } from 'vue-router';
 import Navbar from '/src/components/Navbar.vue';
 import axios from '../axios';
@@ -130,6 +130,10 @@ const router = useRouter();
 const theses = ref([]);
 const loading = ref(false);
 const searchKeyword = ref('');
+
+// 获取事件总线
+const { appContext } = getCurrentInstance();
+const emitter = appContext.config.globalProperties.emitter;
 
 const categories = ref([]);
 const categoryLoading = ref(false);
@@ -217,6 +221,7 @@ const handleSearch = () => {
 
 // 选择分类
 const selectCategory = (categoryName) => {
+  console.log('选择分类:', categoryName);
   selectedCategoryName.value = categoryName;
   currentPage.value = 1;
   fetchTheses();
@@ -248,8 +253,29 @@ const downloadThesis = (fileUrl) => {
   document.body.removeChild(link);
 };
 
+// 监听专业切换事件
+const handleMajorChange = (majorName) => {
+  console.log('ThesisList: 收到专业切换事件:', majorName);
+  
+  // 重新获取分类数据
+  fetchCategories().then(() => {
+    // 设置新的选中分类
+    selectedCategoryName.value = majorName;
+    console.log('ThesisList: 设置选中分类为:', selectedCategoryName.value);
+    // 重置页码并重新获取数据
+    currentPage.value = 1;
+    fetchTheses();
+  });
+};
+
 onMounted(async () => {
   await fetchCategories();
+  
+  // 监听专业切换事件
+  if (emitter) {
+    emitter.on('select-category', handleMajorChange);
+  }
+  
   // 从localStorage获取当前选择的专业
   const selectedMajorStr = localStorage.getItem('selectedMajor');
   if (selectedMajorStr) {
@@ -268,6 +294,13 @@ onMounted(async () => {
     }
   }
   fetchTheses();
+});
+
+// 组件卸载时移除事件监听
+onUnmounted(() => {
+  if (emitter) {
+    emitter.off('select-category', handleMajorChange);
+  }
 });
 </script>
 
@@ -389,11 +422,13 @@ onMounted(async () => {
   left: 100%;
 }
 
-.category-btn:hover {
+.category-btn:hover:not(.active) {
   background-color: #f0f0f0;
   transform: translateY(-1px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
   border-color: #d0d0d0;
+}
+
 .loading, .category-error, .no-categories {
   text-align: center;
   padding: 16px;
@@ -410,12 +445,18 @@ onMounted(async () => {
 }
 
 .category-btn.active {
-  background-color: #409eff;
-  color: white;
-}  border-color: #42b983;
-  box-shadow: 0 3px 10px rgba(66, 185, 131, 0.3);
-  transform: translateY(-1px);
-  animation: pulse 0.5s ease;
+  background-color: #42b983 !important;
+  color: white !important;
+  border-color: #42b983 !important;
+  box-shadow: 0 3px 10px rgba(66, 185, 131, 0.3) !important;
+  transform: translateY(-1px) !important;
+}
+
+.category-btn.active:hover {
+  background-color: #359469 !important;
+  color: white !important;
+  border-color: #359469 !important;
+  box-shadow: 0 4px 12px rgba(66, 185, 131, 0.4) !important;
 }
 
 @keyframes pulse {

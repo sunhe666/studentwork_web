@@ -53,8 +53,10 @@
             />
             <!-- PDF加载进度条 -->
             <div v-if="!pdfLoaded" class="pdf-loading-progress">
-              <div class="progress-bar" :style="{ width: `${pdfLoadingProgress.value}%` }"></div>
-              <div class="progress-text">{{ pdfLoadingProgress.value > 0 ? `加载中... ${pdfLoadingProgress.value}%` : '准备加载PDF...' }}</div>
+              <div class="progress-container">
+                <div class="progress-bar" :style="{ width: `${pdfLoadingProgress}%` }"></div>
+              </div>
+              <div class="progress-text">{{ pdfLoadingProgress > 0 ? `加载中... ${pdfLoadingProgress}%` : '准备加载PDF...' }}</div>
             </div>
           </div>
           <div class="pdf-controls" v-if="pdfLoaded">
@@ -116,6 +118,7 @@ const totalPages = ref(0);
 const scale = ref(1);
 const pdfInstance = ref(null);
 const pdfLoadingProgress = ref(0); // 添加PDF加载进度变量
+const progressTimer = ref(null); // 进度模拟定时器
 const isLiked = ref(false);
 const isFavorited = ref(false);
 
@@ -196,6 +199,13 @@ const fetchThesisDetail = async () => {
       }
     }
     thesis.value = res.data;
+    
+    // 如果有PDF文件，启动进度模拟
+    if (res.data && res.data.thesis_file) {
+      console.log('开始模拟PDF加载进度');
+      simulateProgress();
+    }
+    
     // 获取成功后更新阅读量
     updateViewCount(id);
     // 检查用户是否已登录
@@ -308,11 +318,58 @@ const handleFavorite = async () => {
   }
 };
 
+// 模拟PDF加载进度
+const simulateProgress = () => {
+  // 清除之前的定时器
+  if (progressTimer.value) {
+    clearInterval(progressTimer.value);
+  }
+  
+  pdfLoadingProgress.value = 0;
+  let progress = 0;
+  
+  progressTimer.value = setInterval(() => {
+    if (progress < 90) {
+      // 前90%比较快
+      progress += Math.random() * 15 + 5;
+    } else if (progress < 95) {
+      // 90-95%慢一点
+      progress += Math.random() * 3 + 1;
+    } else {
+      // 95%以后很慢，等待真实加载完成
+      progress += Math.random() * 1;
+    }
+    
+    pdfLoadingProgress.value = Math.min(Math.round(progress), 99);
+    
+    // 如果PDF已经加载完成，停止模拟
+    if (pdfLoaded.value || progress >= 99) {
+      clearInterval(progressTimer.value);
+      progressTimer.value = null;
+    }
+  }, 200);
+};
+
 // PDF加载进度更新处理
 const onPdfProgress = (progressData) => {
-  const { loaded, total } = progressData;
-  if (total > 0) {
-    pdfLoadingProgress.value = Math.round((loaded / total) * 100);
+  console.log('PDF加载进度数据:', progressData);
+  
+  // 清除模拟进度定时器，使用真实进度
+  if (progressTimer.value) {
+    clearInterval(progressTimer.value);
+    progressTimer.value = null;
+  }
+  
+  if (progressData && typeof progressData === 'object') {
+    const { loaded, total } = progressData;
+    if (total > 0) {
+      const progress = Math.round((loaded / total) * 100);
+      pdfLoadingProgress.value = Math.min(progress, 99); // 最大99%，留1%给渲染完成
+      console.log(`PDF真实加载进度: ${pdfLoadingProgress.value}% (${loaded}/${total})`);
+    }
+  } else if (typeof progressData === 'number') {
+    // 如果直接传入数字进度
+    pdfLoadingProgress.value = Math.min(Math.round(progressData), 99);
     console.log(`PDF加载进度: ${pdfLoadingProgress.value}%`);
   }
 };
@@ -374,8 +431,20 @@ const onPdfLoaded = (instance) => {
     if (!instance) {
       throw new Error('PDF实例未定义');
     }
+    
+    // 清除模拟进度定时器
+    if (progressTimer.value) {
+      clearInterval(progressTimer.value);
+      progressTimer.value = null;
+    }
+    
+    // 设置进度为100%
+    pdfLoadingProgress.value = 100;
+    console.log('PDF加载完成，进度设为100%');
+    
     pdfInstance.value = instance;
     console.log('PDF加载完成，实例已保存:', instance);
+    
     // 尝试获取总页数
     if (instance.numPages !== undefined) {
       totalPages.value = instance.numPages;
@@ -384,11 +453,22 @@ const onPdfLoaded = (instance) => {
       totalPages.value = instance.pdfDoc.numPages;
       console.log('通过pdfDoc获取总页数:', totalPages.value);
     }
-    pdfLoaded.value = true;
-    pdfErrorMessage.value = '';
+    
+    // 延迟一点时间再隐藏进度条，让用户看到100%
+    setTimeout(() => {
+      pdfLoaded.value = true;
+      pdfErrorMessage.value = '';
+    }, 800);
+    
   } catch (e) {
     console.error('PDF加载完成回调出错:', e);
     pdfLoaded.value = false;
+    pdfLoadingProgress.value = 0;
+    // 清除定时器
+    if (progressTimer.value) {
+      clearInterval(progressTimer.value);
+      progressTimer.value = null;
+    }
     pdfErrorMessage.value = `PDF加载失败: ${e.toString()}`;
     ElMessage.error(pdfErrorMessage.value);
   }
@@ -944,19 +1024,38 @@ onMounted(() => {
   z-index: 10;
 }
 
-.progress-bar {
-  height: 10px;
+.progress-container {
+  height: 12px;
   background-color: #f0f0f0;
-  border-radius: 5px;
+  border-radius: 6px;
   overflow: hidden;
-  margin-bottom: 10px;
+  margin-bottom: 15px;
+  position: relative;
 }
 
-.progress-bar div {
+.progress-bar {
   height: 100%;
-  background-color: #42b983;
+  background: linear-gradient(90deg, #42b983, #52c993);
   transition: width 0.3s ease;
-  border-radius: 5px;
+  border-radius: 6px;
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-bar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
 
 .progress-text {

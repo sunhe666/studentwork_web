@@ -69,6 +69,7 @@ onMounted(() => {
   max-width: 1200px;
   margin: 0 auto;
   padding: 30px;
+  padding-bottom: 100px; /* 为底部tabbar留出空间 */
   background-color: white;
   border-radius: 8px;
   box-shadow: 0 2px 10px rgba(0,0,0,0.1);
@@ -144,10 +145,20 @@ onMounted(() => {
 
   .announcement-detail {
     padding: 20px;
+    padding-bottom: 120px; /* 移动端为tabbar留出更多空间 */
   }
 
   .title {
     font-size: 20px;
+  }
+
+  .meta {
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .back-link {
+    margin-bottom: 20px; /* 增加返回按钮的底部间距 */
   }
 }
 </style>

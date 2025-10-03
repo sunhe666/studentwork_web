@@ -10,7 +10,9 @@ import AnnouncementDetail from './views/AnnouncementDetail.vue';
 import ThesisList from './views/ThesisList.vue';
 import ThesisDetail from './views/ThesisDetail.vue'; // 导入论文详情组件
 import FavoriteThesisList from './views/FavoriteThesisList.vue'; // 导入收藏列表组件
-import ThesisGuide from './views/ThesisGuide.vue'; // 导入论文指导指南组件
+import AIAssistant from './views/AIAssistant.vue'; // 导入AI助手选择页面
+import ThesisGuidanceChat from './views/ThesisGuidanceChat.vue'; // 导入论文指导聊天组件
+import ThesisReduction from './views/ThesisReduction.vue'; // 导入论文降重组件
 import JoinUs from './views/JoinUs.vue'; // 导入加入我们组件
 
 const routes = [
@@ -25,7 +27,9 @@ const routes = [
   { path: '/thesis-list', name: 'ThesisList', component: ThesisList },
   { path: '/thesis-detail/:id', name: 'ThesisDetail', component: ThesisDetail }, // 添加论文详情路由
   { path: '/favorites', name: 'FavoriteThesisList', component: FavoriteThesisList, meta: { requiresAuth: true } }, // 添加收藏列表路由
-  { path: '/thesis-guide', name: 'ThesisGuide', component: ThesisGuide, meta: { requiresAuth: true } }, // 添加论文指导指南路由
+  { path: '/ai-assistant', name: 'AIAssistant', component: AIAssistant, meta: { requiresAuth: true } }, // AI助手选择页面
+  { path: '/thesis-guidance-chat', name: 'ThesisGuidanceChat', component: ThesisGuidanceChat, meta: { requiresAuth: true } }, // 论文指导聊天页面
+  { path: '/thesis-reduction', name: 'ThesisReduction', component: ThesisReduction, meta: { requiresAuth: true } }, // 论文降重页面
   { path: '/join-us', name: 'JoinUs', component: JoinUs } // 添加加入我们路由
 ]
 

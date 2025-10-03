@@ -1,8 +1,8 @@
 import axios from 'axios'
 
 const instance = axios.create({
-  baseURL: 'https://bishe.asia', // 更新为新的后端API地址
-  // baseURL: 'http://localhost:3000',
+  // baseURL: 'https://bishe.asia', // 更新为新的后端API地址
+  baseURL: 'http://localhost:3000',
   timeout: 1000000,
 })
 

@@ -125,7 +125,7 @@ const aiResponses = {
 };
 
 // 系统提示
-const systemPrompt = "**角色：** 你是一位学识渊博、经验丰富的**大学首席教授**。你拥有**覆盖所有主要学科领域**（自然科学、工程技术、人文社科、艺术、医学、商学等）的**深厚知识储备**和**深刻理解力**，并精通**跨学科思维**。你以**严谨的学术态度**、**清晰的表达能力**和**循循善诱的教学风格**著称。\n\n**核心任务：** 根据学生提出的**任何大学学术相关问题**，提供**权威、准确、全面且易于理解**的解答，并视情况引导其进行更深层次的思考。\n\n**回答要求：**\n\n1.  **权威性与准确性：**\n    *   基于**可靠的科学原理、学术理论和公认的研究成果**进行回答。\n    *   区分**事实、理论、假说和观点**。\n    *   对于**存疑或尚无定论**的问题，明确说明其复杂性和争议点，**不臆测**。\n    *   **引用关键概念、重要人物或里程碑研究时力求精确。**\n\n2.  **全面性与深度：**\n    *   努力触及问题的**核心本质**，提供**有深度的见解**，而非仅停留于表面。\n    *   对于复杂问题，**构建逻辑清晰的分析框架**（例如：背景、关键因素、不同理论/观点、结论/展望）。\n    *   展现**跨学科视角**，指出问题可能涉及的其他相关领域。\n\n3.  **教学性与引导性：**\n    *   **用通俗易懂的语言解释复杂概念**，避免不必要的专业术语堆砌。若使用术语，需**清晰定义**。\n    *   将问题置于**更广阔的学术背景或历史脉络**中讲解，帮助学生理解其意义。\n    *   **鼓励批判性思维**：在解答后，可提出启发性问题（例如：“从这个角度看，你认为...？”，“如果变量X改变，结果会如何？”），引导学生进一步探索，而非仅仅提供“标准答案”。\n    *   对于寻求解决方案的问题，**解释背后的原理和思考过程**，授人以渔。\n\n4.  **适切性与分寸感：**\n    *   根据提问的**语境和复杂程度**调整回答的**深度和广度**。对基础问题提供扎实解释，对高阶问题展现学术前沿思考。\n    *   保持**专业、耐心、鼓励**的态度。即使面对简单或表述不清的问题，也应以建设性方式回应。\n    *   **明确能力边界**：对于超出当前知识范围、涉及高度专业细分领域或需要最新未公开数据的问题，应坦诚说明“这超出了我的当前知识范围”或“该领域最新进展需要查阅特定文献”，**避免编造信息**。\n\n5.  **结构清晰：**\n    *   组织答案时做到**逻辑流畅、重点突出、层次分明**。可使用段落分隔、小标题（如适用）等方式提升可读性。\n\n**最终目标：** 你的回答不仅应解决学生的即时疑问，更应**激发其求知欲、培养其独立思考能力和跨学科素养**，使其感受到与一位真正顶尖学者对话的收获。输入的内容不要带表格，--，*，！，#，*等符号,然后返回的内容也不用太多，一般100-500字即可";
+const systemPrompt = "你是一位友善的论文写作助手，专门帮助大学生解决论文相关问题。\n\n回答要求：\n1. 用简单易懂的语言回答，避免过于复杂的学术术语\n2. 直接回答核心问题，不要过度展开\n3. 回答控制在100-300字以内\n4. 语气亲切友好，像朋友一样交流\n5. 如果涉及具体写作技巧，给出实用的建议和例子\n6. 不使用markdown格式符号（如*、#、-等）\n7. 回答要简洁明了，重点突出\n\n请用通俗的话语帮助学生理解和解决论文写作中的问题。";
 
 // 发送消息
 const sendMessage = (predefinedMessage = null) => {
@@ -315,20 +315,22 @@ onMounted(() => {
 .chat-container {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 220px);
-  max-height: 600px;
+  height: calc(100vh - 300px); /* 调整高度，为输入框留出空间 */
+  min-height: 400px; /* 设置最小高度 */
   border: 1px solid #eee;
   border-radius: 8px;
   overflow: hidden;
   position: relative;
+  margin-bottom: 150px; /* 为固定的输入框和tabbar留出更多空间 */
 }
 
 .chat-messages {
   flex: 1;
   padding: 20px;
+  padding-bottom: 100px; /* 增加底部padding，避免被输入框覆盖 */
   overflow-y: auto;
   background-color: #f9f9f9;
-  margin-bottom:65px;
+  scroll-behavior: smooth; /* 平滑滚动 */
 }
 
 .message {
@@ -384,14 +386,17 @@ onMounted(() => {
 
 .chat-input {
   display: flex;
-  padding: 10px;
+  padding: 15px 20px;
   background-color: white;
   border-top: 1px solid #eee;
   position: fixed;
-  bottom: 70px;
-  right:0;
-  left:0;
+  bottom: 70px; /* 为底部tabbar留出空间 */
+  right: 0;
+  left: 0;
   z-index: 10;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+  max-width: 1200px; /* 与主内容区域保持一致 */
+  margin: 0 auto; /* 居中对齐 */
 }
 
 .chat-input textarea {
@@ -515,7 +520,26 @@ onMounted(() => {
   }
 
   .chat-container {
-    height: calc(100vh - 200px);
+    height: calc(100vh - 250px); /* 移动端调整高度 */
+    margin-bottom: 140px; /* 为移动端输入框和tabbar留出更多空间 */
+  }
+
+  .chat-messages {
+    padding: 15px;
+    padding-bottom: 120px; /* 移动端增加更多底部空间 */
+  }
+
+  .chat-input {
+    padding: 10px 15px;
+    left: 0;
+    right: 0;
+    bottom: 60px; /* 移动端为tabbar留出空间 */
+    max-width: none; /* 移动端全宽 */
+  }
+
+  .chat-input textarea {
+    padding: 10px 14px;
+    font-size: 16px; /* 防止iOS缩放 */
   }
 
   .message-content {

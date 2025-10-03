@@ -48,7 +48,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch,computed } from 'vue';
+import { ref, onMounted, onUnmounted, watch, computed, getCurrentInstance } from 'vue';
 import Navbar from '/src/components/Navbar.vue';
 import { ElMessage } from 'element-plus';
 import { useRouter } from 'vue-router';
@@ -58,6 +58,10 @@ const router = useRouter();
 const searchQuery = ref('');
 const activeCategory = ref('全部');
 const contentList = ref([]);
+
+// 获取事件总线
+const { appContext } = getCurrentInstance();
+const emitter = appContext.config.globalProperties.emitter;
 
 // 分类标签数据
 const categories = ref([]);
@@ -160,8 +164,35 @@ watch([searchQuery, activeCategory], () => {
   fetchProjectList();
 }, { immediate: true });
 
+// 监听专业切换事件
+const handleMajorChange = (majorName) => {
+  console.log('ProjectSearch: 收到专业切换事件:', majorName);
+  
+  // 重新获取分类数据
+  fetchCategories().then(() => {
+    // 设置新的活跃分类
+    activeCategory.value = majorName;
+    // 重新获取数据
+    fetchProjectList();
+  });
+};
+
 // 页面加载时获取数据
 fetchProjectList();
+
+// 组件挂载时监听事件
+onMounted(() => {
+  if (emitter) {
+    emitter.on('select-category', handleMajorChange);
+  }
+});
+
+// 组件卸载时移除事件监听
+onUnmounted(() => {
+  if (emitter) {
+    emitter.off('select-category', handleMajorChange);
+  }
+});
 </script>
 
 <style scoped>
