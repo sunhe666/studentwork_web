@@ -32,7 +32,7 @@
     <div class="detail-screenshots">
       <div class="section-title">项目截图</div>
       <div class="screenshot-grid">
-        <img v-for="(img, idx) in content.screenshots" :key="idx" :src="img" alt="项目截图" class="screenshot-img" />
+        <img v-for="(img, idx) in content.screenshots" :key="idx" :src="img" alt="项目截图" class="screenshot-img" @click="openImagePreview(img)" />
       </div>
     </div>
 
@@ -111,6 +111,14 @@
             </div>
           </div>
         </el-dialog>
+      </div>
+    </div>
+
+    <!-- 图片预览模态框 -->
+    <div v-if="showImagePreview" class="image-preview-modal" @click="closeImagePreview">
+      <div class="preview-content" @click.stop>
+        <button class="close-btn" @click="closeImagePreview">×</button>
+        <img :src="previewImage" alt="预览图片" class="preview-img" />
       </div>
     </div>
   </div>
